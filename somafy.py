@@ -31,7 +31,10 @@ SPOTIFY_REDIRECT_URL = 'http://localhost:9090'
 SPOTIFY_SCOPE = 'playlist-modify-public playlist-read-private'
 
 SOMAFM_CHANNELS = [
+    'brfm',
+    # 'christmas',
     'deepspaceone',
+    'digitalis',
     'dronezone',
     'fluid',
     'groovesalad',
@@ -39,7 +42,8 @@ SOMAFM_CHANNELS = [
     'lush',
     'sonicuniverse',
     'spacestation',
-    'suburbsofgoa'
+    'suburbsofgoa',
+    # 'xmasinfrisko'
 ]
 
 sp = None
@@ -79,6 +83,8 @@ def init_spotify():
 
 
 def get_somafm_list(channel):
+
+    print(f'\nProcessing Channel: {channel}\n')
 
     URL = 'https://somafm.com/{}/songhistory.html'.format(channel)
     page = requests.get(URL)

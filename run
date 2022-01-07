@@ -1,0 +1,5 @@
+eval "$(conda shell.bash hook)"
+cd ~/somafy
+source set-env
+conda activate ./env
+python somafy.py
