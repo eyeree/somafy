@@ -8,6 +8,7 @@ import random
 import spotipy
 import sys
 import time
+import datetime
 
 FIND_DELAY = 0.25   # seconds
 MIN_LONG_SLEEP = 5  # minutes
@@ -55,11 +56,14 @@ def q(s):
     
 
 def sp_page(result):
+    start = time.time()
     yield result
     while result['next']:
         result = sp.next(result)
         yield result
-
+    end = time.time()
+    elapsed = end - start
+    print(f'- elapsed {elapsed:.4f}')
 
 def init_spotify():
 
@@ -74,7 +78,7 @@ def init_spotify():
         print("Can't get token for", SPOTIFY_USER_NAME)
         exit(1)
 
-    sp = spotipy.Spotify(auth=token)
+    sp = spotipy.Spotify(auth=token,  requests_timeout=120)
     sp.trace = False
 
     print('init_spotify', SPOTIFY_USER_NAME)
@@ -135,8 +139,23 @@ def get_channel_mapping(somafm_list):
 def is_mapped(somafm_list, somafm_track):
     channel_mapping = get_channel_mapping(somafm_list)
     key = get_mapping_key(somafm_track)
-    return key in channel_mapping
-
+    if key in channel_mapping:
+        value = channel_mapping[key]
+        if value is None:
+            print("forcing recheck -- ", key)
+            return False
+        elif value.startswith("None_"):
+            checked = dateparser.parse(value[5:])
+            days =  abs((datetime.datetime.now() - checked).days)
+            if days > 30:
+                print("recheck after ", days, " days ", key)
+                return False
+            else:
+                return True
+        else:
+            return True
+    else:
+        return False
 
 def add_mapping(somafm_list, somafm_track, spotify_album):
     channel_mapping = get_channel_mapping(somafm_list)
@@ -144,7 +163,7 @@ def add_mapping(somafm_list, somafm_track, spotify_album):
     if spotify_album:
         channel_mapping[key] = spotify_album['id']
     else:
-        channel_mapping[key] = None
+        channel_mapping[key] = f"None_{str(datetime.datetime.now())}"
 
 
 def filter_somafm_list(somafm_list):
@@ -231,20 +250,22 @@ def find_spotify_album(somafm_track):
 
 def get_spotify_album_tracks(spotify_album):
     result = []
+    print('get_spotify_album_tracks', q(spotify_album['id']))
     for page in sp_page(sp.album_tracks(spotify_album['id'])):
         result.extend(page['items'])
-    print('get_spotify_album_tracks', q(spotify_album['name']), len(result), 'tracks')
+    print('--> get_spotify_album_tracks', q(spotify_album['name']), len(result), 'tracks')
     return [t['id'] for t in result]
 
 
 def get_spotify_playlist_tracks(spotify_list):
     if 'track_ids' not in spotify_list:
         result = set()
+        print('--> get_spotify_playlist_tracks', q(spotify_list['id']))
         for page in sp_page(sp.playlist_tracks(spotify_list['id'])):
             for item in page['items']:
                 result.add(item['track']['id'])
         spotify_list['track_ids'] = result
-        print('get_spotify_playlist_tracks', q(spotify_list['name']), len(result), 'tracks')
+        print('--> get_spotify_playlist_tracks', q(spotify_list['name']), len(result), 'tracks')
     return spotify_list['track_ids']
 
 
@@ -295,10 +316,11 @@ def get_spotify_list(spotify_lists, somafm_list):
 
 def get_spotify_lists():
     spotify_lists = {}
+    print('get_spotify_lists')
     for result in sp_page(sp.current_user_playlists()):
         for item in result['items']:
             spotify_lists[item['name']] = item
-    print('get_spotify_lists', len(spotify_lists), 'lists')
+    print('--> get_spotify_lists', len(spotify_lists), 'lists')
     return spotify_lists
 
 

@@ -6,3 +6,14 @@ Populate [Spotify](https://www.spotify.com/us/) playlists with all tracks from a
 1. if the album/artist has been process before then stop and do the next album/arist or channel
 1. get list of tracks already on spotify playlist and remove any duplicates (in case mappings.json is out of sync)
 1. add tracks to beginning of spotify playlist
+
+# Running
+source ./env/bin/activate
+source set-env
+python3 somafy.py
+
+# Setup
+python3 -m venv ./env
+pip install requirements.txt
+
+
